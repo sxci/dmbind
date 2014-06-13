@@ -55,6 +55,11 @@ pkg
 # For vim:
 *.swp
 
+# For emacs
+*~
+[#]*[#]
+.\#*
+
 # for dmbind
 qboxdmbind.conf
 qboxdmbind.conf*
