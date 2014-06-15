@@ -1,23 +1,24 @@
 package main
+
 // run: source /Users/cheney/Projects/qiniu/env.sh && source /Users/cheney/Projects/qiniu/dmbind/env.sh && rm -r pkg; go run run.go
 
 import (
-	"os"
-	"net/http"
 	"encoding/json"
+	"net/http"
+	"os"
 )
 
 import (
-	"dmbind/lib/pub"
-	"dmbind/cnc"
 	"dmbind/admin"
+	"dmbind/api"
+	"dmbind/cnc"
+	"dmbind/dnspod"
 	"dmbind/domain"
 	"dmbind/lib/context"
+	"dmbind/lib/pub"
+	"dmbind/log"
 	"dmbind/mail"
 	"dmbind/stat"
-	"dmbind/log"
-	"dmbind/dnspod"
-	"dmbind/api"
 	"dmbind/test"
 )
 
@@ -41,13 +42,13 @@ type CncConf struct {
 }
 
 type AdminConf struct {
-	User string `json:"user"`
-	Pswd string `json:"pswd"`
-	CacheTime int64 `json:"cache_time"`
-	HostName string `json:"host_name"`
-	BindBucket []string `json:"bind_bucket"`
-	CdnSourceUrl []string `json:"cdn_source_url"`
-	IcpNotifyMail []string `json:"icp_notify_mail"`
+	User                string   `json:"user"`
+	Pswd                string   `json:"pswd"`
+	CacheTime           int64    `json:"cache_time"`
+	HostName            string   `json:"host_name"`
+	BindBucket          []string `json:"bind_bucket"`
+	CdnSourceUrl        []string `json:"cdn_source_url"`
+	IcpNotifyMail       []string `json:"icp_notify_mail"`
 	TestFailNotifyMails []string `json:"test_fail_notify_mails"`
 }
 
@@ -57,30 +58,36 @@ type PubConf struct {
 }
 
 type MailConf struct {
-	Profile map[string] mail.MailProfile `json:"profile"`
-	MailServerProfile string `json:"mail_server_profile"`
+	Profile           map[string]mail.MailProfile `json:"profile"`
+	MailServerProfile string                      `json:"mail_server_profile"`
 }
 
 func init() {
 	f, err := os.Open(confFile)
-	if err != nil { panic(err) }
+	if err != nil {
+		panic(err)
+	}
 	defer f.Close()
 	var conf Conf
 	err = json.NewDecoder(f).Decode(&conf)
-	if err != nil { panic(err) }
+	if err != nil {
+		panic(err)
+	}
 	bindHost = ":" + conf.Port
 	cnc.Setup(conf.Cnc.User, conf.Cnc.Pswd)
 	admin.Setup(conf.Admin.User, conf.Admin.Pswd, conf.Admin.CacheTime)
 	admin.SetupIcpNotifyMail(conf.Admin.IcpNotifyMail)
 	admin.SetupLocalhost(conf.Admin.HostName + bindHost)
 	admin.SetupTest(conf.Admin.TestFailNotifyMails, conf.Admin.BindBucket, conf.Admin.CdnSourceUrl)
-	pub.Setup(&pub.Mac {
+	pub.Setup(&pub.Mac{
 		AccessKey: conf.Pub.AccessKey,
 		SecretKey: []byte(conf.Pub.SecretKey),
 	})
 	mail.SetupProfile(conf.Mail.Profile)
-	err = mail.SetupMailServerProfile("chenye_qiniu_pop")
-	if err != nil { panic(err) }
+	err = mail.SetupMailServerProfile("qiniu_pop")
+	if err != nil {
+		panic(err)
+	}
 	dnspod.Setup(conf.Dnspod)
 }
 
@@ -147,5 +154,8 @@ func main() {
 	// mux.HandleFunc("/dns/add", context.Wrap(dnspod.DnspodCName))
 
 	mux.HandleFunc("/log/view", context.Wrap(log.View))
+
+	//api.Hostname =
+
 	panic(http.ListenAndServe(bindHost, mux))
 }
