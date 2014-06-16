@@ -155,7 +155,5 @@ func main() {
 
 	mux.HandleFunc("/log/view", context.Wrap(log.View))
 
-	//api.Hostname =
-
 	panic(http.ListenAndServe(bindHost, mux))
 }

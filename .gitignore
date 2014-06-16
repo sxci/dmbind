@@ -64,6 +64,6 @@ pkg
 qboxdmbind.conf
 qboxdmbind.conf*
 -R
-
+*.tmp
 
 # ################
