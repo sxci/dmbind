@@ -2,10 +2,10 @@ package cnc
 
 import (
 	"errors"
-	"strconv"
-	"time"
 	"net/url"
+	"strconv"
 	"strings"
+	"time"
 
 	"dmbind/lib/context"
 	"dmbind/mail"
@@ -25,24 +25,24 @@ func List(c *context.Context) {
 	page := c.Int("page", 1)
 	total := c.Int("total", 30)
 	search := c.String("search", "")
-	
+
 	ret, err := list(search, page, total)
 	c.ReplyIfError(err)
 	c.ReplyJSON(ret)
 }
 
 type SafeAddRet struct {
-	Ret RetSaveParams `json:"ret"`
-	Unicp []string `json:"unicp"`
+	Ret   RetSaveParams `json:"ret"`
+	Unicp []string      `json:"unicp"`
 }
 
 func AddSafe(c *context.Context) {
 	domains := c.MustStrings("domain")
 	src := c.String("src", "")
 	var ret RetSaveParams
-	err := context.Call(&ret, Add, url.Values {
+	err := context.Call(&ret, Add, url.Values{
 		"domain": domains,
-		"src": {src},
+		"src":    {src},
 	})
 	c.ReplyIfError(err)
 
@@ -80,13 +80,15 @@ func Add(c *context.Context) {
 	domains := c.MustStrings("domain")
 	src := c.String("src", "")
 	relId, ok := getIdleRelativeId()
-	if ! ok {
+	if !ok {
 		c.ReplyErrorInfo("not idle relativeDomain id")
 		return
 	}
 	ds := make([]*InsertRecord, len(domains))
 	for i, d := range domains {
-		if d == "" { continue }
+		if d == "" {
+			continue
+		}
 		ds[i] = NewInsertRecord(i, d, src)
 	}
 	ret, err := addDomain(ds, relId, "insert", "")
@@ -128,17 +130,21 @@ func WaitFor(c *context.Context) {
 	for {
 		time.Sleep(time.Minute)
 		infos, err := versionList(version, exceptStatus)
-		if err != nil { continue }
-		if len(infos) != 1 { continue }
+		if err != nil {
+			continue
+		}
+		if len(infos) != 1 {
+			continue
+		}
 		c.ReplyObj(true)
 	}
 }
 
 func WaitForFinish(c *context.Context) {
 	version := c.MustString("version")
-	err := context.Call(nil, WaitFor, url.Values {
+	err := context.Call(nil, WaitFor, url.Values{
 		"version": {version},
-		"status": {"5"},
+		"status":  {"5"},
 	})
 	c.ReplyIfError(err)
 	domains := getDomainsFromVersion(version)
@@ -175,7 +181,7 @@ func Ticket(c *context.Context) {
 func DeployPass(c *context.Context) {
 	ret, err := versionList("", "2")
 	c.ReplyIfError(err)
-	rets := make(map[string] interface{}, len(ret))
+	rets := make(map[string]interface{}, len(ret))
 	for _, v := range ret {
 		version := v.Version
 		rets[version], err = deploy(version)
@@ -187,7 +193,7 @@ func DeployPass(c *context.Context) {
 }
 
 func Index(c *context.Context) {
-	if ! c.IsPost() {
+	if !c.IsPost() {
 		img, lt, err := getLoginVerify()
 		if err != nil {
 			c.ReplyError(err)
@@ -201,7 +207,7 @@ func Index(c *context.Context) {
 		<body>
 		<div id="verify"></div>
 		<form action="/cnc/" method="POST">
-		<input type="hidden" name="lt" value="`+lt+`" />
+		<input type="hidden" name="lt" value="` + lt + `" />
 		<input type="input" name="verify" autofocus/>
 		<input type="submit" />
 		</form>
@@ -211,6 +217,7 @@ func Index(c *context.Context) {
 		c.ReplyHtml(html)
 		return
 	}
+	c.Info("query: ", c.Req.URL.Query())
 	lt := c.MustString("lt")
 	verify := c.MustString("verify")
 	err := login(cncUser, cncPswd, verify, lt)
@@ -228,8 +235,8 @@ func Submit(c *context.Context) {
 	source := c.String("source", "ws1.source.qbox.me")
 	err := submit(domains, source)
 	c.ReplyIfError(err)
-	c.ReplyIfError(context.Call(nil, mail.Send, url.Values {
-		"to": {"chenye@qiniu.com"},
+	c.ReplyIfError(context.Call(nil, mail.Send, url.Values{
+		"to":      {"chenye@qiniu.com"},
 		"subject": {"发送增加域名信息给cdn，请确认"},
 		"content": {strings.Join(domains, "\n")},
 	}))

@@ -23,8 +23,9 @@ import (
 )
 
 var (
-	bindHost = ":8088"
-	confFile = "qboxdmbind.conf"
+	bindHost   = ":8088"
+	confFile   = "qboxdmbind.conf"
+	fetcherTmp = "fetcher.tmp"
 )
 
 type Conf struct {
@@ -63,6 +64,7 @@ type MailConf struct {
 }
 
 func init() {
+	initRelativeDomain()
 	f, err := os.Open(confFile)
 	if err != nil {
 		panic(err)
@@ -89,6 +91,20 @@ func init() {
 		panic(err)
 	}
 	dnspod.Setup(conf.Dnspod)
+}
+
+func initRelativeDomain() {
+	f, err := os.Open("relative-domain.conf")
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+	var rel []*cnc.RelativeDomain
+	err = json.NewDecoder(f).Decode(&rel)
+	if err != nil {
+		panic(err)
+	}
+	cnc.SetRel(rel)
 }
 
 func main() {
